@@ -10,3 +10,6 @@ Day 0.1: The basic app is now created.
 
 Function: Reads the local .mp3 stored within the directory, and takes your microphone's input -> converts it into text -> interprets the text accordingly inside the while loop.
 
+Day 0.2: Making the app speak back.
+
+I tried using pyttsx3 (text to speech library) but it doesnt help, as it keeps on crasing and messes up with the while loop. So I am now going to try using gTTs + playsound.
