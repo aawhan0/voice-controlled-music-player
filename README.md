@@ -7,5 +7,6 @@ Day 0.0: Starting with learning about the libraries required in this project:
 3. Pygame - provides an interface.
 
 Day 0.1: The basic app is now created.
+
 Function: Reads the local .mp3 stored within the directory, and takes your microphone's input -> converts it into text -> interprets the text accordingly inside the while loop.
 
