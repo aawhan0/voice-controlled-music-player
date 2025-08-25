@@ -15,6 +15,9 @@ pygame.mixer.init() #initializes the pygame mixer, for using play and pause comm
 songsfolder = "songs"
 playlist = [f for f in os.listdir(songsfolder) if f.endswith(".mp3")]
 current = 0 #current index of the song from playlist.
+volume = 0.6  # Default volume (60%)
+pygame.mixer.music.set_volume(volume)
+
 
 def speak(text):
     print("🔊 " + text)
@@ -66,6 +69,23 @@ while True:
 
     elif "hello" in command:
         speak("Hey boss, I can hear you.")
+
+    elif "increase volume by 1" in command:
+        if volume < 1.0:
+            volume = min(volume + 0.2, 1.0)
+            pygame.mixer.music.set_volume(volume)
+            speak("Volume increased by one level.")
+        else:
+            speak("Volume is already at maximum.")
+
+    elif "decrease volume by 1" in command:
+        if volume > 0.0:
+            volume = max(volume - 0.2, 0.0)
+            pygame.mixer.music.set_volume(volume)
+            speak("Volume decreased by one level.")
+        else:
+            speak("Volume is already at minimum.")
+
     
     elif "resume" in command or "play" in command:
         if is_paused:
