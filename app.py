@@ -1,5 +1,6 @@
 import pygame
 import os
+import speech_recognition as sr
 
 # Init mixer
 pygame.mixer.init() #initializes the pygame mixer, for using play and pause commands
@@ -13,28 +14,43 @@ def play_song(index):
     pygame.mixer.music.play()
     print(f"Now playing: {playlist[index]}")
 
+def get_voice_command():
+    r = sr.Recognizer() 
+    with sr.Microphone() as source:
+        print("Listening..")
+        audio = r.listen(source)
+    try:
+        command = r.recognize_google(audio)
+        print(f"You said: {command}")
+        return command.lower()
+    except sr.UnknownValueError:
+        print("Could not undertand the audio.")
+    except sr.RequestError:
+        print("Could not request results.")
+    return ""
+
 play_song(current) # plays the first song
 
 while True:
 
-    command = input("Enter command (next/previous/pause/resume/stop/exit): ").lower()
+    command = get_voice_command()
 
-    if command == "pause":
+    if "pause" in command:
         pygame.mixer.music.pause()
-    elif command == "resume":
+    elif "resume" in command or "play" in command:
         pygame.mixer.music.unpause()
-    elif command == "next":
+    elif "next" in command:
         current = (current+1) % len(playlist)
         play_song(current)
-    elif command == "previous":
+    elif "previous" in command or "back" in command:
         current = (current-1) % len(playlist)
         play_song(current)
-    elif command == "stop":
+    elif "stop" in command:
         pygame.mixer.music.stop()
-    elif command == "exit":
+    elif "exit" in command or "quit" in command:
         pygame.mixer.music.stop()
         break
     else:
-        print("Invalid command, Try again.")
+        print("Did not catch a valid command.")
 
 
