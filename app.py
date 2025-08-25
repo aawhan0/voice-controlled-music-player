@@ -1,13 +1,16 @@
 import pygame
 import os
 import speech_recognition as sr
-import pyttsx3
+
+import time
+time.sleep(0.2) # adds a short pause for transitioning.
+
+from gtts import gTTS
+from playsound import playsound
+import tempfile
 
 # Init mixer
 pygame.mixer.init() #initializes the pygame mixer, for using play and pause commands
-
-engine = pyttsx3.init() #initializes the pyttsx3.
-engine.setProperty('rate', 160)
 
 songsfolder = "songs"
 playlist = [f for f in os.listdir(songsfolder) if f.endswith(".mp3")]
@@ -15,21 +18,30 @@ current = 0 #current index of the song from playlist.
 
 def speak(text):
     print("🔊 " + text)
+    tts = gTTS(text)
     
-    engine.say(text)
-    engine.runAndWait()
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+    tts.save(temp_file.name)
+    temp_file.close()  # Close so playsound can access it
+
+    try:
+        playsound(temp_file.name)
+    finally:
+        os.remove(temp_file.name)  # Clean up after speaking
 
 
 def play_song(index):
     song = playlist[index]
+    speak(f"Now playing: {song}")
+    time.sleep(0.2)
     pygame.mixer.music.load(os.path.join(songsfolder, song))
     pygame.mixer.music.play()
-    speak(f"Now playing: {song}")
 
 def get_voice_command():
     r = sr.Recognizer() 
     with sr.Microphone() as source:
         print("Listening..")
+        r.adjust_for_ambient_noise(source, duration=0.5)  # helps avoid noise interference
         audio = r.listen(source)
     try:
         command = r.recognize_google(audio)
@@ -49,10 +61,20 @@ while True:
 
     if "pause" in command:
         pygame.mixer.music.pause()
+        is_paused = True
         speak("Music paused.")
+
+    elif "hello" in command:
+        speak("Hey boss, I can hear you.")
+    
     elif "resume" in command or "play" in command:
-        pygame.mixer.music.unpause()
-        speak("Resuming music.")
+        if is_paused:
+            pygame.mixer.music.unpause()
+            speak("Resuming music.")
+            is_paused = False
+        else:
+            speak("Nothing to resume.")
+
     elif "next" in command:
         current = (current+1) % len(playlist)
         play_song(current)
