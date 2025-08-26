@@ -82,5 +82,3 @@ The program listens for voice commands such as “play,” “pause,” “next,
 This project is licensed under the MIT License.
 
 ***
-
-This version focuses on clarity and professionalism appropriate for a GitHub project README.
