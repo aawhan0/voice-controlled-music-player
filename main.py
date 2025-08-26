@@ -1,79 +1,26 @@
 import pygame
 import os
-import speech_recognition as sr
-
 import time
 time.sleep(0.2) # adds a short pause for transitioning.
+from playback import speak
+from gui_utils import show_album_art
+from speech_utils import get_voice_command
 
-from PIL import Image
-from io import BytesIO
-import base64
-
-from gtts import gTTS
-from playsound import playsound
-import tempfile
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
-import tkinter as tk
 from tkinter import messagebox
 
-def show_album_art(song_path):
-    from mutagen.id3 import ID3
-    try:
-        tags = ID3(song_path)
-        for tag in tags.values():
-            if tag.FrameID == "APIC":
-                img_data = tag.data
-                image = Image.open(BytesIO(img_data))
-                
-                # Create Tkinter window to show album art
-                root = tk.Toplevel()
-                root.title("Album Art")
-                
-                # Resize image if it's too big
-                max_size = (300, 300)
-                image.thumbnail(max_size)
-
-                # Convert PIL Image to Tkinter-compatible format
-                tk_image = tk.PhotoImage(image)
-                
-                label = tk.Label(root, image=tk_image)
-                label.image = tk_image  # Keep reference
-                label.pack()
-
-                # Auto-close after 5 seconds
-                root.after(5000, root.destroy)
-                return
-        print("No album art embedded.")
-    except Exception as e:
-        print(f"No album art found or error occurred: {e}")
-
+songsfolder = "songs"
+volume = 0.6  # Default volume (60%)
 
 # Init mixer
 pygame.mixer.init() #initializes the pygame mixer, for using play and pause commands
 
-songsfolder = "songs"
 playlist = [f for f in os.listdir(songsfolder) if f.endswith(".mp3")]
 current = 0 #current index of the song from playlist.
-volume = 0.6  # Default volume (60%)
 current_metadata = {}
 is_paused = False
 pygame.mixer.music.set_volume(volume)
-
-
-def speak(text):
-    print("🔊 " + text)
-    tts = gTTS(text)
-    
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-    tts.save(temp_file.name)
-    temp_file.close()  # Close so playsound can access it
-
-    try:
-        playsound(temp_file.name)
-    finally:
-        os.remove(temp_file.name)  # Clean up after speaking
-
 
 def play_song(index):
     global current_song, current_metadata
@@ -125,22 +72,6 @@ def show_song_info():
         speak(f"You are listening to {current_metadata['title']} by {current_metadata['artist']}.")
 
 
-def get_voice_command():
-    r = sr.Recognizer() 
-    with sr.Microphone() as source:
-        print("Listening..")
-        r.adjust_for_ambient_noise(source, duration=0.5)  # helps avoid noise interference
-        audio = r.listen(source)
-    try:
-        command = r.recognize_google(audio)
-        print(f"You said: {command}")
-        return command.lower()
-    except sr.UnknownValueError:
-        print("Could not undertand the audio.")
-    except sr.RequestError:
-        print("Could not request results.")
-    return ""
-
 play_song(current) # plays the first song
 
 while True:
@@ -159,7 +90,6 @@ while True:
         speak(f"You are listening to: {current_song}")
         print(f"🎶 Now playing: {current_song}")
 
-
     elif "increase volume by 1" in command:
         if volume < 1.0:
             volume = min(volume + 0.2, 1.0)
@@ -176,7 +106,6 @@ while True:
         else:
             speak("Volume is already at minimum.")
 
-    
     elif "resume" in command or "play" in command:
         if is_paused:
             pygame.mixer.music.unpause()
@@ -189,9 +118,11 @@ while True:
         current = (current+1) % len(playlist)
         play_song(current)
         # speak("")
+
     elif "previous" in command or "back" in command:
         current = (current-1) % len(playlist)
         play_song(current)
+
     elif "stop" in command:
         pygame.mixer.music.stop()
         speak("Stopping music.")        
@@ -200,6 +131,7 @@ while True:
         pygame.mixer.music.stop()
         speak("Exiting the music player.")
         break
+
     else:
         print("(Did not catch a valid command.)")
 
