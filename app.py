@@ -5,9 +5,49 @@ import speech_recognition as sr
 import time
 time.sleep(0.2) # adds a short pause for transitioning.
 
+from PIL import Image
+from io import BytesIO
+import base64
+
 from gtts import gTTS
 from playsound import playsound
 import tempfile
+from mutagen.mp3 import MP3
+from mutagen.easyid3 import EasyID3
+import tkinter as tk
+from tkinter import messagebox
+
+def show_album_art(song_path):
+    from mutagen.id3 import ID3
+    try:
+        tags = ID3(song_path)
+        for tag in tags.values():
+            if tag.FrameID == "APIC":
+                img_data = tag.data
+                image = Image.open(BytesIO(img_data))
+                
+                # Create Tkinter window to show album art
+                root = tk.Toplevel()
+                root.title("Album Art")
+                
+                # Resize image if it's too big
+                max_size = (300, 300)
+                image.thumbnail(max_size)
+
+                # Convert PIL Image to Tkinter-compatible format
+                tk_image = tk.PhotoImage(image)
+                
+                label = tk.Label(root, image=tk_image)
+                label.image = tk_image  # Keep reference
+                label.pack()
+
+                # Auto-close after 5 seconds
+                root.after(5000, root.destroy)
+                return
+        print("No album art embedded.")
+    except Exception as e:
+        print(f"No album art found or error occurred: {e}")
+
 
 # Init mixer
 pygame.mixer.init() #initializes the pygame mixer, for using play and pause commands
@@ -16,6 +56,8 @@ songsfolder = "songs"
 playlist = [f for f in os.listdir(songsfolder) if f.endswith(".mp3")]
 current = 0 #current index of the song from playlist.
 volume = 0.6  # Default volume (60%)
+current_metadata = {}
+is_paused = False
 pygame.mixer.music.set_volume(volume)
 
 
@@ -34,11 +76,54 @@ def speak(text):
 
 
 def play_song(index):
+    global current_song, current_metadata
     song = playlist[index]
-    speak(f"Now playing: {song}")
-    time.sleep(0.2)
-    pygame.mixer.music.load(os.path.join(songsfolder, song))
+    current_song = song
+
+    song_path = os.path.join(songsfolder, song)
+    show_album_art(song_path)
+
+    try:
+        audio = MP3(song_path, ID3=EasyID3)
+        title = audio.get("title", [song])[0]
+        artist = audio.get("artist", ["Unknown Artist"])[0]
+        duration = int(audio.info.length)
+    except Exception:
+        title = song
+        artist = "Unknown Artist"
+        duration = 0
+
+    current_metadata = {
+        "title": title,
+        "artist": artist,
+        "duration": f"{duration //60}: {duration % 60:02d}"
+    }
+
+    speak(f"Now playing {title} by {artist}.")
+    print(f"🎶 Title: {title}")
+    print(f"🎤 Artist: {artist}")
+    print(f"⏱️ Duration: {duration // 60}:{duration % 60:02d} minutes")
+    
+    
+    pygame.mixer.music.load(song_path)
     pygame.mixer.music.play()
+
+def show_song_info():
+    if current_metadata:
+        info = (
+            f"🎵 Title: {current_metadata['title']}\n"
+            f"🎤 Artist: {current_metadata['artist']}\n"
+            f"⏱️ Duration: {current_metadata['duration']} mins"
+        )
+
+        # Popup window
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        messagebox.showinfo("Now Playing", info)
+        root.destroy()
+        
+        speak(f"You are listening to {current_metadata['title']} by {current_metadata['artist']}.")
+
 
 def get_voice_command():
     r = sr.Recognizer() 
@@ -69,6 +154,11 @@ while True:
 
     elif "hello" in command:
         speak("Hey boss, I can hear you.")
+
+    elif "what is playing" in command or "show song info" in command or "song details" in command:
+        speak(f"You are listening to: {current_song}")
+        print(f"🎶 Now playing: {current_song}")
+
 
     elif "increase volume by 1" in command:
         if volume < 1.0:
