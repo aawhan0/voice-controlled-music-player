@@ -1,6 +1,3 @@
-Here is a professional, clean, and straightforward README for your voice-controlled music player project without fancy styling or excessive emojis:
-
-***
 
 # Voice Controlled Music Player
 
